@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bibliothèque de Loïc</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-10">
+<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+  <h1 class="text-3xl font-bold mb-4 text-center">Bibliothèque de Loïc</h1>
+  <form id="bookForm" class="mb-6">
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Titre du livre</label>
+      <input type="text" id="title" required class="mt-1 p-2 w-full border rounded-lg">
+    </div>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Nombre de pages</label>
+      <input type="number" id="pages" class="mt-1 p-2 w-full border rounded-lg" placeholder="Non spécifié">
+    </div>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Type</label>
+      <select id="type" required class="mt-1 p-2 w-full border rounded-lg">
+        <option value="Livres">Livres</option>
+        <option value="Manhwa">Manhwa</option>
+        <option value="Webtoon">Webtoon</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Statut</label>
+      <select id="status" required class="mt-1 p-2 w-full border rounded-lg">
+        <option value="En cours">En cours</option>
+        <option value="Terminé">Terminé</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Note /10</label>
+      <select id="rating" required class="mt-1 p-2 w-full border rounded-lg">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Commentaire</label>
+      <textarea id="comment" class="mt-1 p-2 w-full border rounded-lg"></textarea>
+    </div>
+    <button type="submit" class="bg-blue-500 text-white p-2 rounded-lg w-full">Ajouter</button>
+  </form>
+  
+  <input type="text" id="search" placeholder="Rechercher..." class="p-2 border rounded-lg w-full mb-4">
+  
+  <div>
+    <label class="block mb-2">Trier par :</label>
+    <select id="sort" class="p-2 border rounded-lg w-full mb-4">
+      <option value="date">Date</option>
+      <option value="type">Type</option>
+      <option value="note">Note</option>
+      <option value="status">Statut</option>
+    </select>
+  </div>
+  
+  <ul id="bookList" class="space-y-4"></ul>
+</div>
+
+<script>
+  const bookForm = document.getElementById("bookForm");
+  const bookList = document.getElementById("bookList");
+  const sortSelect = document.getElementById("sort");
+  const searchInput = document.getElementById("search");
+  let books = JSON.parse(localStorage.getItem("books")) || [];
+
+  bookForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = document.getElementById("title").value;
+    let pages = document.getElementById("pages").value;
+    const type = document.getElementById("type").value;
+    const status = document.getElementById("status").value;
+    const rating = document.getElementById("rating").value;
+    const comment = document.getElementById("comment").value;
+    const date = new Date().toLocaleDateString("fr-FR");
+
+    pages = pages ? pages : "Non spécifié";
+    const book = { title, pages, type, status, rating, comment, date };
+    books.push(book);
+    localStorage.setItem("books", JSON.stringify(books));
+    bookForm.reset();
+    displayBooks();
+  });
+
+  sortSelect.addEventListener("change", displayBooks);
+  searchInput.addEventListener("input", displayBooks);
+
+  function displayBooks() {
+    bookList.innerHTML = "";
+    let searchTerm = searchInput.value.toLowerCase();
+    let filteredBooks = books.filter(book => 
+      Object.values(book).some(value => value.toString().toLowerCase().includes(searchTerm))
+    );
+    
+    filteredBooks.forEach((book, index) => {
+      const li = document.createElement("li");
+      li.className = "p-4 bg-gray-50 rounded-lg shadow-md";
+      li.innerHTML = `<strong>${book.title}</strong> - ${book.type} - ${book.pages} pages - ${book.status} - ${book.rating}/10 - ${book.date} 
+                      <button onclick="toggleComment(${index})" class="ml-2 text-blue-500">+</button>
+                      <p id="comment-${index}" class="hidden mt-2 text-gray-600">${book.comment}</p>
+                      <button onclick="editBook(${index})" class="ml-2 text-green-500">Modifier</button>
+                      <button onclick="deleteBook(${index})" class="ml-2 text-red-500">Supprimer</button>`;
+      bookList.appendChild(li);
+    });
+  }
+
+  function toggleComment(index) {
+    document.getElementById(`comment-${index}`).classList.toggle("hidden");
+  }
+
+  function deleteBook(index) {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce livre ?")) {
+      books.splice(index, 1);
+      localStorage.setItem("books", JSON.stringify(books));
+      displayBooks();
+    }
+  }
+
+  function editBook(index) {
+    const book = books[index];
+    document.getElementById("title").value = book.title;
+    document.getElementById("pages").value = book.pages;
+    document.getElementById("type").value = book.type;
+    document.getElementById("status").value = book.status;
+    document.getElementById("rating").value = book.rating;
+    document.getElementById("comment").value = book.comment;
+    books.splice(index, 1);
+    localStorage.setItem("books", JSON.stringify(books));
+    displayBooks();
+  }
+
+  displayBooks();
+</script>
+</body>
+</html>
